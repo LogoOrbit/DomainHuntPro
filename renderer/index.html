@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DomainHunt Pro</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◎</span>
+      <span>DomainHunt <b>Pro</b></span>
+    </div>
+    <div class="tools">
+      <button id="importBtn" class="ghost" title="Import a CSV/TXT/JSON list of domains">↧ Import</button>
+      <button id="exportCsv" class="ghost" disabled>↥ Export CSV</button>
+      <button id="exportJson" class="ghost" disabled>↥ Export JSON</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Find who wants your domain.</h1>
+      <p class="sub">Type a domain or a brand name. We scan the registries and surface the
+        companies, owners and contact emails connected to that name.</p>
+
+      <form id="searchForm" class="searchbox">
+        <input id="query" type="text" placeholder="e.g.  tesla.com  or  acmewidgets" autocomplete="off" spellcheck="false" />
+        <button id="huntBtn" type="submit">Hunt</button>
+      </form>
+
+      <div id="progress" class="progress hidden">
+        <div class="bar"><div id="barFill" class="fill"></div></div>
+        <span id="progressText">Scanning…</span>
+      </div>
+    </section>
+
+    <section id="summary" class="summary hidden"></section>
+
+    <section class="results">
+      <table id="resultsTable" class="hidden">
+        <thead>
+          <tr>
+            <th>Domain</th><th>Status</th><th>Owner / Company</th><th>Contact emails</th><th>Registrar</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+      <div id="empty" class="empty">No results yet — run a hunt above.</div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

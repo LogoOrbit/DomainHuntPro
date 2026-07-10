@@ -1,0 +1,25 @@
+{
+  "name": "domainhuntpro",
+  "version": "1.0.0",
+  "description": "DomainHunt Pro — find who owns, wants, or shares a domain name. Simple, fast, powerful.",
+  "main": "main.js",
+  "author": "LogoOrbit",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.logoorbit.domainhuntpro",
+    "productName": "DomainHunt Pro",
+    "files": ["main.js", "preload.js", "lookup.js", "renderer/**/*"],
+    "mac": { "target": "dmg", "category": "public.app-category.business" },
+    "win": { "target": "nsis" },
+    "linux": { "target": "AppImage", "category": "Office" }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
