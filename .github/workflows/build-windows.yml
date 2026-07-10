@@ -27,7 +27,9 @@ jobs:
         run: npm install
 
       - name: Build Windows installer
-        run: npm run dist
+        # --publish never: just build the .exe locally; do not try to upload it
+        # to a GitHub release (which would require a token we don't need).
+        run: npm run dist -- --publish never
         env:
           # Skip code signing (we have no certificate); the app still runs.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
