@@ -125,7 +125,7 @@ ipcMain.handle('export', async (evt, { rows, format, kind }) => {
     content = JSON.stringify(rows, null, 2);
   } else {
     const cols = kind === 'leads'
-      ? ['org', 'sources', 'emails', 'outreach', 'score', 'yourDomains', 'trademarks', 'lookalikeDomains', 'registrar']
+      ? ['org', 'sources', 'emails', 'outreach', 'score', 'yourDomains', 'trademarks', 'location', 'lookalikeDomains', 'registrar']
       : ['domain', 'status', 'registered', 'owner', 'emails', 'outreach', 'registrar', 'created', 'expires', 'note'];
     const esc = (v) => {
       if (v == null) v = '';

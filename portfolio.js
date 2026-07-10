@@ -66,10 +66,11 @@ async function huntPortfolio(domains, { tlds, concurrency = 4, onProgress, isCan
   function ingestTrademarks(fqdn, marks) {
     for (const m of marks) {
       if (!m.owner) continue;
-      const lead = bucket(leadKey(m.owner, m.email, ''), { org: m.owner });
-      if (m.email) lead.emails.add(m.email);
+      const lead = bucket(leadKey(m.owner, '', ''), { org: m.owner });
       if (!lead.org) lead.org = m.owner;
       if (m.wordmark) lead.trademarks.add(m.wordmark + (m.serial ? ` (#${m.serial})` : ''));
+      const loc = [m.state, m.country].filter(Boolean).join(', ');
+      if (loc) lead.location = loc;
       lead.yourDomains.add(fqdn);
       lead.sources.add('trademark');
     }
@@ -110,6 +111,7 @@ async function huntPortfolio(domains, { tlds, concurrency = 4, onProgress, isCan
     yourDomains: [...l.yourDomains],
     trademarks: [...l.trademarks],
     sources: [...l.sources],
+    location: l.location || '',
     registrar: l.registrar,
     // Trademark owners are high-intent → weight them; direct emails and
     // interest in multiple of your domains also lift the score.
