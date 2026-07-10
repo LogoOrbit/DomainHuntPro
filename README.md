@@ -39,6 +39,27 @@ paste — it just works.
   multiple of your domains). Choose a **Quick scan** (8 TLDs, fast) or
   **Full scan** (25 TLDs, thorough) depending on portfolio size, and cancel
   mid-run any time — leads found so far are kept and exportable.
+- 🏷️ **Trademark-owner leads (USPTO)** — paste a free USPTO API key in the
+  Portfolio Leads tab and every scan also matches your domain names against
+  the US trademark register. Registered-brand owners (often the highest-intent
+  buyers) are merged into the same ranked lead list, tagged **Trademark** vs
+  **Domain** so you know where each lead came from. The key is validated with a
+  **Test connection** button and stored locally; trademark lookups are
+  best-effort and never block a scan.
+
+## USPTO trademark API key (optional)
+
+To enable trademark-owner leads, get a **free** key:
+
+1. Sign in / create an account at **[data.uspto.gov](https://data.uspto.gov/)**
+   (identity is verified via ID.me).
+2. Open **[Getting Started](https://data.uspto.gov/apis/getting-started) →
+   Manage API Key** and generate a key.
+3. In DomainHunt Pro, open the **Portfolio Leads** tab, paste the key, click
+   **Test connection**, then **Save**.
+
+The key is stored locally in the app's user-data folder and sent only to
+USPTO over HTTPS (`x-api-key` header). Leave it blank to run RDAP-only scans.
 
 ## Run it
 

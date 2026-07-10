@@ -144,6 +144,29 @@ $('tabPortfolio').addEventListener('click', () => {
   $('singleTools').classList.add('hidden');
 });
 
+// USPTO API key settings
+(async function loadSettings() {
+  try {
+    const s = await window.api.getSettings();
+    if (s && s.usptoApiKey) $('usptoKey').value = s.usptoApiKey;
+  } catch (e) { /* ignore */ }
+})();
+
+$('usptoSaveBtn').addEventListener('click', async () => {
+  const key = $('usptoKey').value.trim();
+  const res = await window.api.saveSettings({ usptoApiKey: key });
+  $('usptoStatus').textContent = res.ok ? 'Saved ✓' : 'Save failed';
+  if (res.ok) toast(key ? 'USPTO key saved' : 'USPTO key cleared');
+});
+
+$('usptoTestBtn').addEventListener('click', async () => {
+  const key = $('usptoKey').value.trim();
+  if (!key) { $('usptoStatus').textContent = 'Enter a key first'; return; }
+  $('usptoStatus').textContent = 'Testing…';
+  const res = await window.api.testUsptoKey(key);
+  $('usptoStatus').textContent = res.ok ? (res.message || 'Valid ✓') : (res.error || 'Failed');
+});
+
 $('portfolioImportBtn').addEventListener('click', async () => {
   const res = await window.api.importFile();
   if (!res.ok) { if (!res.canceled) toast(res.error || 'Import failed'); return; }
@@ -183,13 +206,21 @@ function renderLeadsRows(leads) {
     const emailHtml = contacts.length
       ? contacts.map((e) => `<a href="mailto:${esc(e)}">${esc(e)}</a>`).join('')
       : '<span class="muted">—</span>';
+    const sources = (l.sources || []);
+    const srcHtml = sources.map((s) => {
+      const cls = s === 'trademark' ? 'src-tm' : 'src-rdap';
+      const label = s === 'trademark' ? 'Trademark' : 'Domain';
+      return `<span class="pill ${cls}">${label}</span>`;
+    }).join(' ') || '<span class="muted">—</span>';
+    const seen = (l.trademarks && l.trademarks.length ? l.trademarks : (l.lookalikeDomains || []));
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${l.score}</td>
       <td>${esc(l.org)}</td>
+      <td>${srcHtml}</td>
       <td class="emails">${emailHtml}</td>
-      <td class="muted">${esc(l.yourDomains.join(', '))}</td>
-      <td class="muted">${esc(l.lookalikeDomains.join(', '))}</td>`;
+      <td class="muted">${esc((l.yourDomains || []).join(', '))}</td>
+      <td class="muted">${esc(seen.join(', '))}</td>`;
     body.appendChild(tr);
   }
   $('leadsTable').classList.toggle('hidden', leads.length === 0);

@@ -6,9 +6,23 @@ const path = require('path');
 const { hunt } = require('./lookup');
 const { huntPortfolio, QUICK_TLDS } = require('./portfolio');
 const { SCAN_TLDS } = require('./lookup');
+const { testKey } = require('./trademark');
 
 let win;
 let portfolioCancelled = false;
+
+// --- Local settings (API keys etc.) ----------------------------------------
+function settingsPath() {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+function readSettings() {
+  try { return JSON.parse(fs.readFileSync(settingsPath(), 'utf8')); }
+  catch (e) { return {}; }
+}
+function writeSettings(obj) {
+  try { fs.writeFileSync(settingsPath(), JSON.stringify(obj, null, 2), 'utf8'); return true; }
+  catch (e) { return false; }
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -51,13 +65,32 @@ ipcMain.handle('hunt', async (evt, query) => {
   }
 });
 
+// --- IPC: settings ----------------------------------------------------------
+ipcMain.handle('settings:get', async () => {
+  const s = readSettings();
+  return { ok: true, usptoApiKey: s.usptoApiKey || '' };
+});
+ipcMain.handle('settings:save', async (evt, patch) => {
+  const s = readSettings();
+  const next = { ...s, ...patch };
+  const ok = writeSettings(next);
+  return { ok };
+});
+ipcMain.handle('settings:testUspto', async (evt, key) => {
+  const apiKey = key || readSettings().usptoApiKey;
+  if (!apiKey) return { ok: false, error: 'No API key set' };
+  return await testKey(apiKey);
+});
+
 // --- IPC: bulk portfolio lead scan ------------------------------------------
 ipcMain.handle('portfolio:run', async (evt, { domains, scope }) => {
   portfolioCancelled = false;
   try {
     const tlds = scope === 'full' ? SCAN_TLDS : QUICK_TLDS;
+    const usptoApiKey = readSettings().usptoApiKey || '';
     const out = await huntPortfolio(domains, {
       tlds,
+      usptoApiKey,
       onProgress: (done, total) => {
         if (win && !win.isDestroyed()) win.webContents.send('portfolio:progress', { done, total });
       },
@@ -92,7 +125,7 @@ ipcMain.handle('export', async (evt, { rows, format, kind }) => {
     content = JSON.stringify(rows, null, 2);
   } else {
     const cols = kind === 'leads'
-      ? ['org', 'emails', 'outreach', 'score', 'yourDomains', 'lookalikeDomains', 'registrar']
+      ? ['org', 'sources', 'emails', 'outreach', 'score', 'yourDomains', 'trademarks', 'lookalikeDomains', 'registrar']
       : ['domain', 'status', 'registered', 'owner', 'emails', 'outreach', 'registrar', 'created', 'expires', 'note'];
     const esc = (v) => {
       if (v == null) v = '';

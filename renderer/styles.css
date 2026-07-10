@@ -98,6 +98,16 @@ tbody tr:hover { background: var(--panel2); }
 .pill.available { background: rgba(46,230,166,.15); color: var(--accent2); }
 .pill.unknown { background: rgba(154,163,178,.15); color: var(--muted); }
 
+.pill.src-tm { background: rgba(46,230,166,.15); color: var(--accent2); }
+.pill.src-rdap { background: rgba(79,140,255,.15); color: var(--accent); }
+
+.settingsbox { max-width: 620px; margin: 0 auto 18px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.settingsbox label { font-size: 13px; display: block; margin-bottom: 8px; }
+.settingsrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.settingsrow input { flex: 1; min-width: 200px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); outline: none; }
+.settingsrow input:focus { border-color: var(--accent); }
+.settingsbox .hint { font-size: 12px; margin-top: 8px; }
+
 .empty { text-align: center; color: var(--muted); padding: 50px 0; }
 .hidden { display: none !important; }
 
