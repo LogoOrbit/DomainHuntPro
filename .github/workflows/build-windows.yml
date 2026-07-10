@@ -1,0 +1,41 @@
+name: Build Windows app
+
+# Builds a ready-to-run Windows installer (.exe) on a real Windows machine.
+# Runs automatically on every push to the dev branch, and can be started by
+# hand from the Actions tab (Run workflow). Download the finished .exe from
+# the run's "Artifacts" section — no local git/npm needed.
+
+on:
+  push:
+    branches:
+      - claude/domain-sales-leads-mhtozs
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Windows installer
+        run: npm run dist
+        env:
+          # Skip code signing (we have no certificate); the app still runs.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: DomainHuntPro-Windows
+          path: |
+            dist/*.exe
+          if-no-files-found: error
