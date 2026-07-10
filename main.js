@@ -64,15 +64,36 @@ ipcMain.handle('export', async (evt, { rows, format }) => {
   if (format === 'json') {
     content = JSON.stringify(rows, null, 2);
   } else {
-    const cols = ['domain', 'status', 'registered', 'owner', 'emails', 'outreach', 'registrar', 'created', 'expires', 'note'];
+    const cols = ['company', 'contact', 'contactConfidence', 'allContacts', 'score', 'tier',
+      'theirDomain', 'yourDomain', 'website', 'whyScore', 'recommendation',
+      'coldEmail', 'linkedinMessage', 'followUp1', 'followUp2', 'registrar', 'created'];
     const esc = (v) => {
       if (v == null) v = '';
       if (Array.isArray(v)) v = v.join('; ');
       v = String(v);
       return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
     };
+    const flat = rows.map((r) => ({
+      company: r.owner,
+      contact: r.bestContact ? r.bestContact.email : '',
+      contactConfidence: r.bestContact ? r.bestContact.confidence : '',
+      allContacts: (r.contacts || []).map((c) => `${c.email} (${c.confidence})`),
+      score: r.score,
+      tier: r.tier,
+      theirDomain: r.domain,
+      yourDomain: r.ownedDomain,
+      website: r.website,
+      whyScore: (r.scoreDetail && r.scoreDetail.reasons) || [],
+      recommendation: r.recommendation,
+      coldEmail: r.outreach && r.outreach.coldEmail,
+      linkedinMessage: r.outreach && r.outreach.linkedin,
+      followUp1: r.outreach && r.outreach.followUp1,
+      followUp2: r.outreach && r.outreach.followUp2,
+      registrar: r.registrar,
+      created: r.created
+    }));
     content = [cols.join(',')]
-      .concat(rows.map((r) => cols.map((c) => esc(r[c])).join(',')))
+      .concat(flat.map((r) => cols.map((c) => esc(r[c])).join(',')))
       .join('\n');
   }
   fs.writeFileSync(filePath, content, 'utf8');

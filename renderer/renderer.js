@@ -25,42 +25,63 @@ function esc(s) {
 }
 
 function renderSummary(rows) {
-  const registered = rows.filter((r) => r.registered === true).length;
-  const available = rows.filter((r) => r.registered === false).length;
-  const withEmail = rows.filter((r) => r.emails && r.emails.length).length;
-  const leads = rows.reduce((n, r) => n + ((r.emails && r.emails.length) || (r.outreach && r.outreach.length) || 0), 0);
+  const buyers = rows.length;
+  const verified = rows.filter((r) => r.verifiedEmails > 0).length;
+  const avg = buyers ? Math.round(rows.reduce((n, r) => n + (r.score || 0), 0) / buyers) : 0;
+  const top = rows[0];
 
   $('summary').innerHTML = `
-    <div class="card good"><div class="n">${withEmail}</div><div class="l">Brands with contacts</div></div>
-    <div class="card"><div class="n">${registered}</div><div class="l">Registered look-alikes</div></div>
-    <div class="card buy"><div class="n">${available}</div><div class="l">Available to buy</div></div>
-    <div class="card"><div class="n">${leads}</div><div class="l">Contact leads</div></div>`;
+    <div class="card good"><div class="n">${buyers}</div><div class="l">Potential buyers</div></div>
+    <div class="card good"><div class="n">${verified}</div><div class="l">With verified contact</div></div>
+    <div class="card"><div class="n">${avg}</div><div class="l">Average match score</div></div>
+    <div class="card buy"><div class="n">${top ? esc(top.score) : '—'}</div><div class="l">${top ? 'Top: ' + esc(top.owner !== '(redacted)' ? top.owner : top.domain) : 'Top opportunity'}</div></div>`;
   $('summary').classList.remove('hidden');
+}
+
+function confidenceClass(c) {
+  return c === 'Verified' ? 'registered' : c === 'Likely Valid' ? 'likely' : 'unknown';
+}
+
+function scoreClass(s) {
+  return s >= 90 ? 'registered' : s >= 75 ? 'likely' : 'unknown';
 }
 
 function renderRows(rows) {
   const body = $('resultsBody');
   body.innerHTML = '';
-  for (const r of rows) {
-    const statusClass = r.registered === true ? 'registered' : r.registered === false ? 'available' : 'unknown';
-    const statusLabel = r.registered === true ? 'Registered' : r.registered === false ? 'Available' : 'Unknown';
-    const contacts = (r.emails && r.emails.length ? r.emails : r.outreach) || [];
-    const emailHtml = contacts.length
-      ? contacts.map((e) => `<a href="mailto:${esc(e)}">${esc(e)}</a>`).join('')
-      : '<span class="muted">—</span>';
-    const owner = r.registered === false
-      ? '<span class="muted">' + esc(r.note || 'Acquisition target') + '</span>'
-      : esc(r.owner || (r.note || '—'));
+  rows.forEach((r, i) => {
+    const company = r.owner && r.owner !== '(redacted)'
+      ? esc(r.owner)
+      : '<span class="muted">Unnamed (registry-redacted) — see contacts</span>';
+    const contacts = (r.contacts || []).slice(0, 3).map((c) =>
+      `<div><a href="mailto:${esc(c.email)}">${esc(c.email)}</a>
+        <span class="pill sm ${confidenceClass(c.confidence)}">${esc(c.confidence)}</span>
+        <span class="muted sm">${esc(c.label)}</span></div>`).join('') || '<span class="muted">—</span>';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="domain">${esc(r.domain)}</td>
-      <td><span class="pill ${statusClass}">${statusLabel}</span></td>
-      <td>${owner}</td>
-      <td class="emails">${emailHtml}</td>
-      <td class="muted">${esc(r.registrar || '—')}</td>`;
+      <td class="domain">${company}</td>
+      <td class="emails">${contacts}</td>
+      <td><span class="pill ${scoreClass(r.score)}">${r.score}</span><div class="muted sm">${esc(r.tier)}</div></td>
+      <td><a href="${esc(r.website)}" target="_blank" rel="noopener">${esc(r.domain)}</a></td>
+      <td><button class="ghost sm" data-detail="${i}">Why + outreach ▾</button></td>`;
     body.appendChild(tr);
-  }
+
+    const dr = document.createElement('tr');
+    dr.className = 'detail hidden';
+    dr.innerHTML = `<td colspan="5">
+      <p><b>Why this score (${r.score} — ${esc(r.tier)}):</b></p>
+      <ul>${(r.scoreDetail?.reasons || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+      <p><b>AI recommendation:</b> ${esc(r.recommendation)}</p>
+      <details><summary>Cold email</summary><pre>${esc(r.outreach?.coldEmail)}</pre></details>
+      <details><summary>LinkedIn message</summary><pre>${esc(r.outreach?.linkedin)}</pre></details>
+      <details><summary>Follow-up email</summary><pre>${esc(r.outreach?.followUp1)}</pre></details>
+      <details><summary>Second follow-up</summary><pre>${esc(r.outreach?.followUp2)}</pre></details>
+    </td>`;
+    body.appendChild(dr);
+
+    tr.querySelector('button[data-detail]').addEventListener('click', () => dr.classList.toggle('hidden'));
+  });
   $('resultsTable').classList.toggle('hidden', rows.length === 0);
   $('empty').classList.toggle('hidden', rows.length > 0);
 }
@@ -80,12 +101,14 @@ async function runHunt(query, { append = false } = {}) {
     if (append) {
       const seen = new Set(currentRows.map((r) => r.domain));
       currentRows = currentRows.concat(res.results.filter((r) => !seen.has(r.domain)));
+      currentRows.sort((a, b) => (b.score || 0) - (a.score || 0));
     } else {
       currentRows = res.results;
     }
     renderSummary(currentRows);
     renderRows(currentRows);
     refreshExportButtons();
+    if (!append && !currentRows.length) toast('No active companies found on look-alike domains for this name.');
   } finally {
     setBusy(false);
   }
@@ -95,7 +118,7 @@ async function runHunt(query, { append = false } = {}) {
 window.api.onProgress(({ done, total }) => {
   const pct = total ? Math.round((done / total) * 100) : 0;
   $('barFill').style.width = pct + '%';
-  $('progressText').textContent = `Scanning ${done}/${total}`;
+  $('progressText').textContent = `Scanning ${done}/${total} look-alike domains`;
 });
 
 $('searchForm').addEventListener('submit', (e) => {
@@ -116,10 +139,10 @@ $('importBtn').addEventListener('click', async () => {
   const res = await window.api.importFile();
   if (!res.ok) { if (!res.canceled) toast(res.error || 'Import failed'); return; }
   if (!res.items.length) { toast('No domains found in file'); return; }
-  toast(`Imported ${res.items.length} domain(s) — hunting…`);
+  toast(`Imported ${res.items.length} domain(s) — hunting buyers…`);
   currentRows = [];
   for (const item of res.items) {
     await runHunt(item, { append: true });
   }
-  toast(`Done — ${currentRows.length} records for ${res.items.length} imported domain(s)`);
+  toast(`Done — ${currentRows.length} prospects for ${res.items.length} owned domain(s)`);
 });

@@ -1,36 +1,45 @@
 # DomainHunt Pro
 
-A dead-simple desktop app for domain buyer/lead research — built in the spirit of
-tools like freevideocompressor.com: **one box, one button, instant results.**
+**An AI-powered premium domain brokerage tool with one mission: find the companies
+most likely to BUY the domains you already own.**
 
-Type a domain (or a bare brand name) and DomainHunt Pro scans the public domain
-registries and shows you **who is connected to that name**:
+This is not a domain search engine, not a registrar, and it never suggests domains
+to purchase. You enter a premium domain **you own** (e.g. `swiftpay.com`) and
+DomainHunt Pro scans public registries for real businesses operating on weaker
+look-alike domains — `swiftpay.io`, `getswiftpay.com`, `swift-pay.net`,
+`swiftpayonline.com`, and dozens more — the companies whose brand would be
+significantly improved by owning your domain.
 
-- **Companies & individuals** who already own the domain or its look-alikes across
-  ~25 TLDs (`.com`, `.io`, `.co`, `.ai`, `.app`, `.store`, `.agency`, `.company`, …)
-- **Contact emails** for each owner (pulled from registry records; when a registry
-  redacts them under GDPR, a role-based outreach list — `info@`, `owner@`,
-  `domains@`, … — is generated so you always have a way in)
-- **Available variants** flagged as acquisition targets
-- **Registrar, status and dates** for every match
+For every prospect it produces:
 
-These are the real parties with an interest in the name — the people to email if you
-want to buy the domain, and the brands to know if you own one they might want.
+| Output | Detail |
+|--------|--------|
+| **Company** | The business behind the look-alike domain (registrant org from RDAP) |
+| **Contact** | Best available email first — registry-verified registrant emails, then guessed decision-maker mailboxes (`ceo@`, `founder@`, `owner@`), then generic inboxes last. Each is labeled **Verified / Likely Valid / Unknown** |
+| **Prospect score** | 0–100 with a tier (Perfect / Excellent / Good / Possible Buyer) and the exact reasons behind the score |
+| **AI recommendation** | A short explanation of why buying your domain helps this specific company |
+| **Outreach** | A personalized cold email, LinkedIn message, and two follow-ups, referencing their company, their current domain, and yours |
 
-## How it works
+## How prospects are found
 
-DomainHunt Pro uses **RDAP** (Registration Data Access Protocol), the official,
-free, no-API-key successor to WHOIS. There is nothing to sign up for and no key to
-paste — it just works.
+For your domain's brand name, the engine generates the look-alike patterns real
+businesses register when the premium name is taken:
 
-## Features
+- The same name across ~19 commercial TLDs (`.io`, `.co`, `.net`, `.ai`, `.app`, …)
+- Prefix variants: `get…`, `my…`, `the…`, `best…`, `try…`, `use…`
+- Suffix variants: `…online`, `…group`, `…world`, `…sales`, `…hq`, `…global`, `…solutions`, …
+- Hyphenated variants
 
-- 🔎 **One-box search** — a domain or a keyword is all it takes
-- 📋 **Contact list** — clickable `mailto:` links for every lead
-- 📥 **Import** — feed it a CSV / TXT / JSON list of domains and it hunts them all
-- 📤 **Export** — save results to CSV or JSON for your CRM / outreach tool
-- ⚡ **Fast** — TLDs are scanned in parallel with a live progress bar
-- 🖥️ **Desktop** — Windows, macOS and Linux (Electron)
+Every candidate is checked via **RDAP** (the official, free, no-API-key successor
+to WHOIS). Only **registered** domains — actual operating businesses — become
+prospects. Available domains are irrelevant to selling and are never shown.
+
+## Guiding principle
+
+> "Does this help the user sell a domain they already own?" If no, it's not in the app.
+
+Success is measured in qualified buyer companies, verified decision-maker contacts,
+and ready-to-send outreach — not in domains found.
 
 ## Run it
 
@@ -45,14 +54,18 @@ npm start        # launches the app
 npm run dist     # produces a .exe (Windows), .dmg (macOS) or .AppImage (Linux)
 ```
 
-Output lands in `dist/`.
+## Bulk processing
 
-## Import file formats
+Import a CSV / TXT / JSON list of domains you own and the app hunts buyers for
+all of them, deduplicates, and ranks the combined prospect list by score.
+Export everything — company, contacts, scores, reasoning, and all four outreach
+messages per lead — to CSV or JSON for your CRM or outreach tool
+(HubSpot, Apollo, Instantly, Smartlead, Lemlist, etc. all import CSV).
 
 - **CSV / TXT** — one domain per line (a `domain` header row is auto-detected)
 - **JSON** — an array of strings, or an array of `{ "domain": "..." }` objects
 
-A ready-made `sample-domains.csv` is included to try the Import button.
+A ready-made `sample-domains.csv` is included.
 
 ## Project layout
 
@@ -60,12 +73,13 @@ A ready-made `sample-domains.csv` is included to try the Import button.
 |------|---------|
 | `main.js` | Electron main process, window + import/export file dialogs |
 | `preload.js` | Secure bridge between UI and Node (context-isolated) |
-| `lookup.js` | RDAP hunt engine — TLD scan, contact extraction |
+| `lookup.js` | Buyer-hunt engine — variant generation, RDAP lookups, scoring, outreach |
 | `renderer/` | The UI (HTML/CSS/JS) |
 
-## Note on results
+## Note on contact data
 
-Registry data varies by TLD and registrar. Many registries redact personal
-contact details under privacy law; in those cases DomainHunt Pro shows the
-owning organization plus a generated role-based outreach list. Availability
-reflects registry status at lookup time.
+Many registries redact registrant details under privacy law. When a direct email
+is exposed in the registry record it is labeled **Verified**; when redacted, the
+app generates decision-maker mailboxes on the company's own domain (**Likely
+Valid**) and generic inboxes (**Unknown**) so you always have an outreach path —
+with decision-makers always prioritized over `info@`-style inboxes.
