@@ -37,11 +37,11 @@ app.on('window-all-closed', () => {
 });
 
 // --- IPC: run a hunt --------------------------------------------------------
-ipcMain.handle('hunt', async (evt, query) => {
+ipcMain.handle('hunt', async (evt, query, options) => {
   try {
-    const out = await hunt(query, (done, total) => {
-      if (win && !win.isDestroyed()) win.webContents.send('hunt:progress', { done, total });
-    });
+    const out = await hunt(query, (done, total, label) => {
+      if (win && !win.isDestroyed()) win.webContents.send('hunt:progress', { done, total, label });
+    }, options || {});
     return { ok: true, ...out };
   } catch (e) {
     return { ok: false, error: String(e && e.message ? e.message : e) };
@@ -50,27 +50,47 @@ ipcMain.handle('hunt', async (evt, query) => {
 
 // --- IPC: export results ----------------------------------------------------
 ipcMain.handle('export', async (evt, { rows, format }) => {
+  const ext = format === 'json' ? 'json' : 'csv';
   const filters = format === 'json'
     ? [{ name: 'JSON', extensions: ['json'] }]
     : [{ name: 'CSV', extensions: ['csv'] }];
+  const defaultName = format === 'contacts' ? 'domainhunt-contacts.csv' : `domainhunt-export.${ext}`;
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
     title: 'Export results',
-    defaultPath: `domainhunt-export.${format}`,
+    defaultPath: defaultName,
     filters
   });
   if (canceled || !filePath) return { ok: false, canceled: true };
 
+  const esc = (v) => {
+    if (v == null) v = '';
+    if (Array.isArray(v)) v = v.join('; ');
+    v = String(v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  };
+
   let content;
   if (format === 'json') {
     content = JSON.stringify(rows, null, 2);
+  } else if (format === 'contacts') {
+    // Flatten every discovered contact into one row per lead — the format an
+    // outreach/CRM tool actually wants.
+    const cols = ['domain', 'owner', 'type', 'value', 'name', 'title', 'channel', 'source', 'confidence'];
+    const lines = [cols.join(',')];
+    for (const r of rows) {
+      const contacts = (r.contacts && r.contacts.length)
+        ? r.contacts
+        : (r.emails || []).map((e) => ({ type: 'email', value: e, source: 'rdap', confidence: 0.9 }));
+      for (const c of contacts) {
+        lines.push([
+          esc(r.domain), esc(r.owner), esc(c.type), esc(c.value), esc(c.name),
+          esc(c.title), esc(c.channel), esc(c.source), esc(c.confidence)
+        ].join(','));
+      }
+    }
+    content = lines.join('\n');
   } else {
     const cols = ['domain', 'status', 'registered', 'owner', 'emails', 'outreach', 'registrar', 'created', 'expires', 'note'];
-    const esc = (v) => {
-      if (v == null) v = '';
-      if (Array.isArray(v)) v = v.join('; ');
-      v = String(v);
-      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-    };
     content = [cols.join(',')]
       .concat(rows.map((r) => cols.map((c) => esc(r[c])).join(',')))
       .join('\n');

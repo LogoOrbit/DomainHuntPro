@@ -19,16 +19,55 @@ want to buy the domain, and the brands to know if you own one they might want.
 
 ## How it works
 
-DomainHunt Pro uses **RDAP** (Registration Data Access Protocol), the official,
-free, no-API-key successor to WHOIS. There is nothing to sign up for and no key to
-paste — it just works.
+DomainHunt Pro runs a **multi-source contact-discovery engine**. RDAP registry
+data is only the starting point — most registries redact contacts under GDPR, so
+a registry-only lookup returns almost nothing. With **Deep enrichment** enabled
+(on by default) each registered domain is fanned out across many *public*
+sources and every contact is merged, de-duplicated and confidence-scored:
+
+| Source | What it finds |
+|--------|---------------|
+| **Website crawl** | Homepage + `/contact`, `/about`, `/team`, `/careers`, `/imprint`, `/legal`, … scraped for emails (including `[at]/[dot]` obfuscation and Cloudflare-protected addresses), phone numbers and social profile links |
+| **Certificate transparency** (crt.sh) | Enumerates subdomains (`mail.`, `careers.`, `support.`, …) — each one another crawl surface |
+| **DNS (MX / TXT)** | Mail infrastructure and platform fingerprints (Google Workspace, Microsoft 365, HubSpot, Salesforce, Mailchimp, …) from verification tokens |
+| **Social handles** | LinkedIn, X/Twitter, Facebook, Instagram, YouTube, GitHub profiles as direct outreach channels |
+| **RDAP registry** | Registrant org and any exposed contact emails |
+| **Email-pattern synthesis** | Once a real person's name is found, common corporate patterns (`first.last@`, `f.last@`, `first@`, …) are generated as candidate addresses |
+| **Paid providers** *(optional)* | Hunter.io, Apollo, Clearbit — auto-activate when their API key is set (see below) |
+
+Everything the engine reads is what a browser visiting the public site would
+see. It does **not** log in, bypass authentication, or scrape behind paywalls or
+social-network logins.
+
+### Optional paid enrichment providers
+
+Set any of these environment variables before launching and the matching
+provider is queried automatically, adding verified business emails on top of the
+free sources:
+
+```bash
+export HUNTER_API_KEY=...     # Hunter.io domain search (wired up)
+export APOLLO_API_KEY=...     # Apollo people search (stub — add your query)
+export CLEARBIT_API_KEY=...   # Clearbit Prospector (stub — add your query)
+```
+
+### A note on volume
+
+Yield depends entirely on the target's public footprint. A large company with a
+staff directory, many subdomains and active social presence can produce
+hundreds of contacts; a parked domain or a privacy-locked one-pager may produce
+only a handful of role-based addresses. There is no honest way to manufacture
+thousands of real, reachable contacts for a domain that simply does not have
+them — the engine surfaces everything that genuinely exists and clearly marks
+synthesized/candidate addresses with a lower confidence score so you can filter.
 
 ## Features
 
 - 🔎 **One-box search** — a domain or a keyword is all it takes
-- 📋 **Contact list** — clickable `mailto:` links for every lead
+- 🕸️ **Deep enrichment** — crawls the site, subdomains, DNS and socials for every contact
+- 📋 **Unified contact list** — emails, phones and social channels, each tagged with source + confidence, expandable per domain
 - 📥 **Import** — feed it a CSV / TXT / JSON list of domains and it hunts them all
-- 📤 **Export** — save results to CSV or JSON for your CRM / outreach tool
+- 📤 **Export** — **Export Contacts** (one row per lead, CRM-ready), plus full CSV / JSON
 - ⚡ **Fast** — TLDs are scanned in parallel with a live progress bar
 - 🖥️ **Desktop** — Windows, macOS and Linux (Electron)
 
@@ -60,7 +99,8 @@ A ready-made `sample-domains.csv` is included to try the Import button.
 |------|---------|
 | `main.js` | Electron main process, window + import/export file dialogs |
 | `preload.js` | Secure bridge between UI and Node (context-isolated) |
-| `lookup.js` | RDAP hunt engine — TLD scan, contact extraction |
+| `lookup.js` | RDAP hunt engine — TLD scan, orchestrates enrichment |
+| `enrich.js` | Multi-source contact-discovery engine (crawl, crt.sh, DNS, socials, patterns, providers) |
 | `renderer/` | The UI (HTML/CSS/JS) |
 
 ## Note on results

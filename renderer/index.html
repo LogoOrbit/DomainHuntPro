@@ -14,6 +14,7 @@
     </div>
     <div class="tools">
       <button id="importBtn" class="ghost" title="Import a CSV/TXT/JSON list of domains">↧ Import</button>
+      <button id="exportContacts" class="ghost" disabled title="One row per contact — for your CRM / outreach tool">↥ Export Contacts</button>
       <button id="exportCsv" class="ghost" disabled>↥ Export CSV</button>
       <button id="exportJson" class="ghost" disabled>↥ Export JSON</button>
     </div>
@@ -29,6 +30,7 @@
         <input id="query" type="text" placeholder="e.g.  tesla.com  or  acmewidgets" autocomplete="off" spellcheck="false" />
         <button id="huntBtn" type="submit">Hunt</button>
       </form>
+      <label class="deeptoggle"><input type="checkbox" id="deepMode" checked /> Deep enrichment — crawl site, subdomains, DNS &amp; socials (slower, far more contacts)</label>
 
       <div id="progress" class="progress hidden">
         <div class="bar"><div id="barFill" class="fill"></div></div>
@@ -42,7 +44,7 @@
       <table id="resultsTable" class="hidden">
         <thead>
           <tr>
-            <th>Domain</th><th>Status</th><th>Owner / Company</th><th>Contact emails</th><th>Registrar</th>
+            <th></th><th>Domain</th><th>Status</th><th>Owner / Company</th><th>Contacts</th><th>Sources</th>
           </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
