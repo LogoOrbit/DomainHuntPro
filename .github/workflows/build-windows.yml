@@ -1,0 +1,42 @@
+name: Build Windows installer
+
+on:
+  push:
+    branches: ['claude/domainhunt-pro-redesign-zi4s2t', 'main', 'master']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build NSIS installer
+        run: npx electron-builder --win --publish never
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DomainHuntPro-Windows-Setup
+          path: dist/*.exe
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-win
+          name: DomainHunt Pro 1.0.0 (Windows)
+          body: |
+            Windows installer for DomainHunt Pro.
+
+            Download **DomainHunt Pro Setup 1.0.0.exe** below, run it, and the app installs like any normal Windows program.
+          files: dist/*.exe
