@@ -125,13 +125,14 @@ async function lookupOne(fqdn) {
 
 // Given a user query (a domain or a bare keyword), scan the keyword across
 // all SCAN_TLDS and return everyone related to the name.
-async function hunt(query, onProgress) {
+async function hunt(query, onProgress, tlds) {
   const cleaned = String(query || '').trim().toLowerCase()
     .replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   if (!cleaned) return { keyword: '', results: [] };
 
+  const scanList = (tlds && tlds.length ? tlds : SCAN_TLDS);
   const keyword = cleaned.includes('.') ? cleaned.split('.')[0] : cleaned;
-  const targets = SCAN_TLDS.map((tld) => `${keyword}.${tld}`);
+  const targets = scanList.map((tld) => `${keyword}.${tld}`);
   // Always include the exact domain the user typed, if it had a TLD.
   if (cleaned.includes('.') && !targets.includes(cleaned)) targets.unshift(cleaned);
 

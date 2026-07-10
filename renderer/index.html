@@ -12,7 +12,11 @@
       <span class="logo">◎</span>
       <span>DomainHunt <b>Pro</b></span>
     </div>
-    <div class="tools">
+    <nav class="tabs">
+      <button id="tabSingle" class="tab active">Single Lookup</button>
+      <button id="tabPortfolio" class="tab">Portfolio Leads</button>
+    </nav>
+    <div class="tools" id="singleTools">
       <button id="importBtn" class="ghost" title="Import a CSV/TXT/JSON list of domains">↧ Import</button>
       <button id="exportCsv" class="ghost" disabled>↥ Export CSV</button>
       <button id="exportJson" class="ghost" disabled>↥ Export JSON</button>
@@ -20,34 +24,79 @@
   </header>
 
   <main>
-    <section class="hero">
-      <h1>Find who wants your domain.</h1>
-      <p class="sub">Type a domain or a brand name. We scan the registries and surface the
-        companies, owners and contact emails connected to that name.</p>
+    <section id="singleView">
+      <section class="hero">
+        <h1>Find who wants your domain.</h1>
+        <p class="sub">Type a domain or a brand name. We scan the registries and surface the
+          companies, owners and contact emails connected to that name.</p>
 
-      <form id="searchForm" class="searchbox">
-        <input id="query" type="text" placeholder="e.g.  tesla.com  or  acmewidgets" autocomplete="off" spellcheck="false" />
-        <button id="huntBtn" type="submit">Hunt</button>
-      </form>
+        <form id="searchForm" class="searchbox">
+          <input id="query" type="text" placeholder="e.g.  tesla.com  or  acmewidgets" autocomplete="off" spellcheck="false" />
+          <button id="huntBtn" type="submit">Hunt</button>
+        </form>
 
-      <div id="progress" class="progress hidden">
-        <div class="bar"><div id="barFill" class="fill"></div></div>
-        <span id="progressText">Scanning…</span>
-      </div>
+        <div id="progress" class="progress hidden">
+          <div class="bar"><div id="barFill" class="fill"></div></div>
+          <span id="progressText">Scanning…</span>
+        </div>
+      </section>
+
+      <section id="summary" class="summary hidden"></section>
+
+      <section class="results">
+        <table id="resultsTable" class="hidden">
+          <thead>
+            <tr>
+              <th>Domain</th><th>Status</th><th>Owner / Company</th><th>Contact emails</th><th>Registrar</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+        <div id="empty" class="empty">No results yet — run a hunt above.</div>
+      </section>
     </section>
 
-    <section id="summary" class="summary hidden"></section>
+    <section id="portfolioView" class="hidden">
+      <section class="hero">
+        <h1>Turn your portfolio into leads.</h1>
+        <p class="sub">Import your list of domains (all 1,800 of them). We scan look-alikes across
+          TLDs for each one and merge every owner/brand/contact we find into one ranked, dedup'd
+          outreach list — the people most likely to buy.</p>
 
-    <section class="results">
-      <table id="resultsTable" class="hidden">
-        <thead>
-          <tr>
-            <th>Domain</th><th>Status</th><th>Owner / Company</th><th>Contact emails</th><th>Registrar</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-      <div id="empty" class="empty">No results yet — run a hunt above.</div>
+        <div class="searchbox">
+          <button id="portfolioImportBtn" class="primary" type="button">↧ Import domain list</button>
+          <span id="portfolioCount" class="muted"></span>
+          <select id="portfolioScope">
+            <option value="quick">Quick scan (8 TLDs — faster)</option>
+            <option value="full">Full scan (25 TLDs — thorough, slower)</option>
+          </select>
+          <button id="portfolioRunBtn" type="button" disabled>Find Leads</button>
+          <button id="portfolioCancelBtn" type="button" class="ghost hidden">Cancel</button>
+        </div>
+
+        <div id="portfolioProgress" class="progress hidden">
+          <div class="bar"><div id="portfolioBarFill" class="fill"></div></div>
+          <span id="portfolioProgressText">Scanning…</span>
+        </div>
+      </section>
+
+      <section id="portfolioSummary" class="summary hidden"></section>
+
+      <section class="results">
+        <div class="tools" style="justify-content:flex-end; margin-bottom:10px;">
+          <button id="leadsExportCsv" class="ghost" disabled>↥ Export leads CSV</button>
+          <button id="leadsExportJson" class="ghost" disabled>↥ Export leads JSON</button>
+        </div>
+        <table id="leadsTable" class="hidden">
+          <thead>
+            <tr>
+              <th>Score</th><th>Org / Owner</th><th>Contacts</th><th>Interested in</th><th>Seen at</th>
+            </tr>
+          </thead>
+          <tbody id="leadsBody"></tbody>
+        </table>
+        <div id="leadsEmpty" class="empty">No leads yet — import your portfolio and click Find Leads.</div>
+      </section>
     </section>
   </main>
 

@@ -123,3 +123,115 @@ $('importBtn').addEventListener('click', async () => {
   }
   toast(`Done — ${currentRows.length} records for ${res.items.length} imported domain(s)`);
 });
+
+// --- Portfolio Leads tab -----------------------------------------------------
+let portfolioDomains = [];
+let currentLeads = [];
+let portfolioBusy = false;
+
+$('tabSingle').addEventListener('click', () => {
+  $('tabSingle').classList.add('active');
+  $('tabPortfolio').classList.remove('active');
+  $('singleView').classList.remove('hidden');
+  $('portfolioView').classList.add('hidden');
+  $('singleTools').classList.remove('hidden');
+});
+$('tabPortfolio').addEventListener('click', () => {
+  $('tabPortfolio').classList.add('active');
+  $('tabSingle').classList.remove('active');
+  $('portfolioView').classList.remove('hidden');
+  $('singleView').classList.add('hidden');
+  $('singleTools').classList.add('hidden');
+});
+
+$('portfolioImportBtn').addEventListener('click', async () => {
+  const res = await window.api.importFile();
+  if (!res.ok) { if (!res.canceled) toast(res.error || 'Import failed'); return; }
+  if (!res.items.length) { toast('No domains found in file'); return; }
+  portfolioDomains = res.items;
+  $('portfolioCount').textContent = `${portfolioDomains.length} domain(s) loaded`;
+  $('portfolioRunBtn').disabled = false;
+  toast(`Loaded ${portfolioDomains.length} domain(s) from ${res.filePath}`);
+});
+
+function setPortfolioBusy(busy) {
+  portfolioBusy = busy;
+  $('portfolioRunBtn').disabled = busy || !portfolioDomains.length;
+  $('portfolioImportBtn').disabled = busy;
+  $('portfolioScope').disabled = busy;
+  $('portfolioCancelBtn').classList.toggle('hidden', !busy);
+  $('portfolioProgress').classList.toggle('hidden', !busy);
+  if (busy) { $('portfolioBarFill').style.width = '0%'; $('portfolioProgressText').textContent = 'Scanning…'; }
+}
+
+function renderLeadsSummary(leads) {
+  const withEmail = leads.filter((l) => l.emails.length).length;
+  const total = leads.length;
+  const multi = leads.filter((l) => l.yourDomains.length > 1).length;
+  $('portfolioSummary').innerHTML = `
+    <div class="card good"><div class="n">${withEmail}</div><div class="l">Leads with direct email</div></div>
+    <div class="card"><div class="n">${total}</div><div class="l">Total leads found</div></div>
+    <div class="card buy"><div class="n">${multi}</div><div class="l">Interested in 2+ of your domains</div></div>`;
+  $('portfolioSummary').classList.remove('hidden');
+}
+
+function renderLeadsRows(leads) {
+  const body = $('leadsBody');
+  body.innerHTML = '';
+  for (const l of leads) {
+    const contacts = (l.emails.length ? l.emails : l.outreach) || [];
+    const emailHtml = contacts.length
+      ? contacts.map((e) => `<a href="mailto:${esc(e)}">${esc(e)}</a>`).join('')
+      : '<span class="muted">—</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${l.score}</td>
+      <td>${esc(l.org)}</td>
+      <td class="emails">${emailHtml}</td>
+      <td class="muted">${esc(l.yourDomains.join(', '))}</td>
+      <td class="muted">${esc(l.lookalikeDomains.join(', '))}</td>`;
+    body.appendChild(tr);
+  }
+  $('leadsTable').classList.toggle('hidden', leads.length === 0);
+  $('leadsEmpty').classList.toggle('hidden', leads.length > 0);
+  $('leadsExportCsv').disabled = leads.length === 0;
+  $('leadsExportJson').disabled = leads.length === 0;
+}
+
+window.api.onPortfolioProgress(({ done, total }) => {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  $('portfolioBarFill').style.width = pct + '%';
+  $('portfolioProgressText').textContent = `Scanned ${done}/${total} domains`;
+});
+
+$('portfolioRunBtn').addEventListener('click', async () => {
+  if (!portfolioDomains.length) return;
+  setPortfolioBusy(true);
+  try {
+    const scope = $('portfolioScope').value;
+    const res = await window.api.runPortfolio(portfolioDomains, scope);
+    if (!res.ok) { toast('Error: ' + res.error); return; }
+    currentLeads = res.leads;
+    renderLeadsSummary(currentLeads);
+    renderLeadsRows(currentLeads);
+    toast(res.cancelled
+      ? `Cancelled — ${currentLeads.length} lead(s) found so far`
+      : `Done — ${currentLeads.length} lead(s) found across ${res.scanned} domain(s)`);
+  } finally {
+    setPortfolioBusy(false);
+  }
+});
+
+$('portfolioCancelBtn').addEventListener('click', async () => {
+  await window.api.cancelPortfolio();
+  toast('Cancelling…');
+});
+
+$('leadsExportCsv').addEventListener('click', async () => {
+  const res = await window.api.exportResults(currentLeads, 'csv', 'leads');
+  if (res.ok) toast('Exported to ' + res.filePath);
+});
+$('leadsExportJson').addEventListener('click', async () => {
+  const res = await window.api.exportResults(currentLeads, 'json', 'leads');
+  if (res.ok) toast('Exported to ' + res.filePath);
+});

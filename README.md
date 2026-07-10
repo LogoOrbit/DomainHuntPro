@@ -31,6 +31,14 @@ paste — it just works.
 - 📤 **Export** — save results to CSV or JSON for your CRM / outreach tool
 - ⚡ **Fast** — TLDs are scanned in parallel with a live progress bar
 - 🖥️ **Desktop** — Windows, macOS and Linux (Electron)
+- 🗂️ **Portfolio Leads mode** — got a big list of domains to sell? Import the
+  whole portfolio (hundreds or thousands) on the **Portfolio Leads** tab. It
+  scans look-alikes for every domain and merges everyone it finds — owners,
+  brands, contact emails — into one deduped, scored outreach list, ranked by
+  who's most likely to be a buyer (real contact email, interested in
+  multiple of your domains). Choose a **Quick scan** (8 TLDs, fast) or
+  **Full scan** (25 TLDs, thorough) depending on portfolio size, and cancel
+  mid-run any time — leads found so far are kept and exportable.
 
 ## Run it
 

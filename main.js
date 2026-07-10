@@ -4,8 +4,11 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { hunt } = require('./lookup');
+const { huntPortfolio, QUICK_TLDS } = require('./portfolio');
+const { SCAN_TLDS } = require('./lookup');
 
 let win;
+let portfolioCancelled = false;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -48,14 +51,38 @@ ipcMain.handle('hunt', async (evt, query) => {
   }
 });
 
+// --- IPC: bulk portfolio lead scan ------------------------------------------
+ipcMain.handle('portfolio:run', async (evt, { domains, scope }) => {
+  portfolioCancelled = false;
+  try {
+    const tlds = scope === 'full' ? SCAN_TLDS : QUICK_TLDS;
+    const out = await huntPortfolio(domains, {
+      tlds,
+      onProgress: (done, total) => {
+        if (win && !win.isDestroyed()) win.webContents.send('portfolio:progress', { done, total });
+      },
+      isCancelled: () => portfolioCancelled
+    });
+    return { ok: true, ...out, cancelled: portfolioCancelled };
+  } catch (e) {
+    return { ok: false, error: String(e && e.message ? e.message : e) };
+  }
+});
+
+ipcMain.handle('portfolio:cancel', async () => {
+  portfolioCancelled = true;
+  return { ok: true };
+});
+
 // --- IPC: export results ----------------------------------------------------
-ipcMain.handle('export', async (evt, { rows, format }) => {
+ipcMain.handle('export', async (evt, { rows, format, kind }) => {
   const filters = format === 'json'
     ? [{ name: 'JSON', extensions: ['json'] }]
     : [{ name: 'CSV', extensions: ['csv'] }];
+  const defaultName = kind === 'leads' ? 'domainhunt-leads' : 'domainhunt-export';
   const { canceled, filePath } = await dialog.showSaveDialog(win, {
     title: 'Export results',
-    defaultPath: `domainhunt-export.${format}`,
+    defaultPath: `${defaultName}.${format}`,
     filters
   });
   if (canceled || !filePath) return { ok: false, canceled: true };
@@ -64,7 +91,9 @@ ipcMain.handle('export', async (evt, { rows, format }) => {
   if (format === 'json') {
     content = JSON.stringify(rows, null, 2);
   } else {
-    const cols = ['domain', 'status', 'registered', 'owner', 'emails', 'outreach', 'registrar', 'created', 'expires', 'note'];
+    const cols = kind === 'leads'
+      ? ['org', 'emails', 'outreach', 'score', 'yourDomains', 'lookalikeDomains', 'registrar']
+      : ['domain', 'status', 'registered', 'owner', 'emails', 'outreach', 'registrar', 'created', 'expires', 'note'];
     const esc = (v) => {
       if (v == null) v = '';
       if (Array.isArray(v)) v = v.join('; ');
