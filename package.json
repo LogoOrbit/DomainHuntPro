@@ -7,13 +7,13 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder",
+    "dist": "electron-builder --publish=never",
     "pack": "electron-builder --dir"
   },
   "build": {
     "appId": "com.logoorbit.domainhuntpro",
     "productName": "DomainHunt Pro",
-    "files": ["main.js", "preload.js", "lookup.js", "renderer/**/*"],
+    "files": ["main.js", "preload.js", "lookup.js", "enrich.js", "renderer/**/*"],
     "mac": { "target": "dmg", "category": "public.app-category.business" },
     "win": { "target": "nsis" },
     "linux": { "target": "AppImage", "category": "Office" }
